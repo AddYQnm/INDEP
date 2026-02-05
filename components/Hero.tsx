@@ -9,8 +9,9 @@ function clamp(n: number, min: number, max: number) {
 
 export default function Hero() {
   // ✅ remplace par tes assets
-  const videoSrc = "/hero/3.mp4";
-  const poster = "/images/hero-poster.jpg";
+
+const poster = "/hero/poster.jpg";
+
 
   const mediaRef = useRef<HTMLDivElement | null>(null);
   const rafRef = useRef<number | null>(null);
@@ -157,55 +158,63 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* VIDEO PARALLAX (anim) */}
-        <div
-          ref={mediaRef}
-          className="mt-10 relative h-[clamp(260px,38vw,520px)] w-full rounded-3xl border border-border/70 overflow-hidden bg-black animate-in fade-in zoom-in-95 duration-700 delay-500"
-        >
-          {/* video layer (parallax) */}
-          <div
-            className="absolute inset-0"
-            style={{
-              transform: `translateY(${offsetY}px) scale(1.10)`,
-              willChange: "transform",
-            }}
-          >
-            <video
-              className="h-full w-full object-cover"
-              src={videoSrc}
-              poster={poster}
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="metadata"
-            />
-          </div>
+{/* VIDEO PARALLAX (anim) */}
+<div
+  ref={mediaRef}
+  className="mt-10 relative h-[clamp(260px,38vw,520px)] w-full rounded-3xl border border-border/70 overflow-hidden bg-black animate-in fade-in zoom-in-95 duration-700 delay-500"
+>
+  {/* video layer (parallax) */}
+  <div
+    className="absolute inset-0"
+    style={{
+      transform: `translateY(${offsetY}px) scale(1.10)`,
+      willChange: "transform",
+    }}
+  >
+    <video
+      className="h-full w-full object-cover"
+      autoPlay
+      muted
+      loop
+      playsInline
+      preload="metadata"
+      poster={poster} // ✅ utilise ta variable
+    >
+      <source
+        src="https://res.cloudinary.com/dba299maa/video/upload/3_s5r0qc.webm"
+        type="video/webm"
+      />
+      <source
+        src="https://res.cloudinary.com/dba299maa/video/upload/3_s5r0qc.mp4"
+        type="video/mp4"
+      />
+    </video>
+  </div>
 
-          {/* shimmer léger */}
-          <div className="pointer-events-none absolute inset-0 opacity-40">
-            <div className="absolute -inset-[40%] bg-[conic-gradient(from_180deg_at_50%_50%,transparent,rgba(255,255,255,0.10),transparent)] blur-2xl animate-[spin_9s_linear_infinite]" />
-          </div>
+  {/* shimmer léger */}
+  <div className="pointer-events-none absolute inset-0 opacity-40">
+    <div className="absolute -inset-[40%] bg-[conic-gradient(from_180deg_at_50%_50%,transparent,rgba(255,255,255,0.10),transparent)] blur-2xl animate-[spin_9s_linear_infinite]" />
+  </div>
 
-          {/* overlays premium */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-black/20" />
-          <div className="absolute inset-0 opacity-[0.10] mix-blend-overlay [background-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><filter id=%22n%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%222%22 stitchTiles=%22stitch%22/></filter><rect width=%2260%22 height=%2260%22 filter=%22url(%23n)%22 opacity=%220.4%22/></svg>')]" />
+  {/* overlays premium */}
+  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-black/20" />
+  <div className="absolute inset-0 opacity-[0.10] mix-blend-overlay [background-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><filter id=%22n%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%222%22 stitchTiles=%22stitch%22/></filter><rect width=%2260%22 height=%2260%22 filter=%22url(%23n)%22 opacity=%220.4%22/></svg>')]" />
 
-          <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between gap-4">
-            <div>
-              <div className="text-xs font-bold tracking-[0.18em] opacity-80 text-white">
-                SHOWREEL
-              </div>
-              <div className="mt-1 text-lg md:text-xl font-semibold text-white">
-                Expériences digitales — made in Rouen.
-              </div>
-            </div>
-            <div className="hidden md:inline-flex items-center gap-2 text-xs text-white/70">
-              <span className="h-2 w-2 rounded-full bg-white/40" />
-              Scroll
-            </div>
-          </div>
-        </div>
+  <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between gap-4">
+    <div>
+      <div className="text-xs font-bold tracking-[0.18em] opacity-80 text-white">
+        SHOWREEL
+      </div>
+      <div className="mt-1 text-lg md:text-xl font-semibold text-white">
+        Expériences digitales — made in Rouen.
+      </div>
+    </div>
+    <div className="hidden md:inline-flex items-center gap-2 text-xs text-white/70">
+      <span className="h-2 w-2 rounded-full bg-white/40" />
+      Scroll
+    </div>
+  </div>
+</div>
       </div>
     </section>
   );
