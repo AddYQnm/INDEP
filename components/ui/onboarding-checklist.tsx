@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { motion } from "framer-motion";
+import { motion, cubicBezier } from "framer-motion";
 import { CheckCircle2, PlayCircle } from "lucide-react";
 import { cn } from "@/lib/utils"; // Assuming you have a `cn` utility from shadcn
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
@@ -45,31 +45,32 @@ export const OnboardingChecklist = ({
   videoUrl,
   className,
 }: OnboardingChecklistProps) => {
-  const containerVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.5,
-        ease: "easeOut",
-        when: "beforeChildren",
-        staggerChildren: 0.1,
-      },
+const containerVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: cubicBezier(0.16, 1, 0.3, 1),
+      when: "beforeChildren",
+      staggerChildren: 0.1,
     },
-  };
+  },
+};
 
-  const itemVariants = {
-    hidden: { opacity: 0, x: -20 },
-    visible: {
-      opacity: 1,
-      x: 0,
-      transition: {
-        duration: 0.4,
-        ease: "easeOut",
-      },
+const itemVariants = {
+  hidden: { opacity: 0, x: -20 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: {
+      duration: 0.4,
+      ease: cubicBezier(0.16, 1, 0.3, 1),
     },
-  };
+  },
+};
+
 
   return (
     <motion.div
