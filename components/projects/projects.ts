@@ -22,24 +22,24 @@ export const projects: Project[] = [
     id: 3,
     title: "Portrait dirigeant",
     category: "Corporate",
-    image: "/veau/3.jpg",
+    image: "/veau/3.JPG",
   },
   {
     id: 4,
     title: "Événement entreprise",
     category: "Event",
-    image: "/PTIT/4.jpg",
+    image: "/PTIT/4.JPG",
   },
   {
     id: 5,
     title: "Interview CEO",
     category: "Corporate",
-    image: "/drugstore/6.jpg",
+    image: "/drugstore/6.JPG",
   },
   {
     id: 6,
     title: "Activation de marque",
     category: "Branding",
-    image: "/maaraja/6.jpg",
+    image: "/maaraja/6.JPG",
   },
 ];
