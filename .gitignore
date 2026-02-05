@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Videos
+public/vidéo/
+public/video/
+*.mp4
+*.MP4
