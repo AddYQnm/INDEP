@@ -56,5 +56,3 @@ export function TextRewind({
         </div>
     );
 }
-
-export { TextRewind }
