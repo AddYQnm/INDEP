@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import React, { useState, useEffect, useRef } from 'react';
 
 // --- Data for the feature cards ---
@@ -33,60 +34,45 @@ const features = [
 ];
 
 // --- Custom Hook for Scroll Animation ---
-const useScrollAnimation = () => {
+const useScrollAnimation = <T extends Element>() => {
   const [inView, setInView] = useState(false);
-  const ref = useRef(null);
+  const ref = useRef<T | null>(null);
 
   useEffect(() => {
     const element = ref.current;
     if (!element) return;
 
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        // Update state when the element's intersection status changes.
-        setInView(entry.isIntersecting);
-      },
-      {
-        root: null, // observing intersections relative to the viewport
-        rootMargin: '0px',
-        threshold: 0.1, // 10% of the item must be visible to trigger the callback
-      }
+      ([entry]) => setInView(entry.isIntersecting),
+      { root: null, rootMargin: "0px", threshold: 0.1 }
     );
 
     observer.observe(element);
-
-    // Cleanup function to disconnect the observer when the component unmounts.
     return () => observer.disconnect();
   }, []);
 
-  return [ref, inView];
+  return [ref, inView] as const;
 };
+
 
 
 // --- Header Component ---
 const AnimatedHeader = () => {
-    const [headerRef, headerInView] = useScrollAnimation();
-    const [pRef, pInView] = useScrollAnimation();
+  const [headerRef, headerInView] = useScrollAnimation<HTMLHeadingElement>();
+  const [pRef, pInView] = useScrollAnimation<HTMLParagraphElement>();
 
-    return (
-        <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 
-                ref={headerRef}
-                className={`text-4xl md:text-5xl font-bold transition-all duration-700 ease-out text-white dark:text-white ${headerInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
-                style={{ transformStyle: 'preserve-3d' }}
-            >
-                Nos Réalisations
-            </h2>
-            <p 
-                ref={pRef}
-                className={`text-lg text-white dark:text-gray-300 mt-4 transition-all duration-700 ease-out delay-200 ${pInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
-                style={{ transformStyle: 'preserve-3d' }}
-            >
-                Découvrez nos projets les plus récents et les résultats obtenus pour nos clients.
-            </p>
-        </div>
-    );
+  return (
+    <div className="text-center max-w-3xl mx-auto mb-16">
+      <h2 ref={headerRef} className={`... ${headerInView ? "..." : "..."}`}>
+        Nos Réalisations
+      </h2>
+      <p ref={pRef} className={`... ${pInView ? "..." : "..."}`}>
+        Découvrez nos projets...
+      </p>
+    </div>
+  );
 };
+
 
 // This is the main component that orchestrates everything.
 export function StickyFeatureSection() {
