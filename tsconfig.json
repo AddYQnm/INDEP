@@ -29,6 +29,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-  ],
+, "components/ui/hero-futuristic"  ],
   "exclude": ["node_modules"]
 }
