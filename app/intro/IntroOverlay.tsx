@@ -68,7 +68,7 @@ export default function IntroOverlay({ onDone }: { onDone: () => void }) {
               className="text-[clamp(12px,1.4vw,16px)] tracking-[0.32em] uppercase text-white/55"
               variants={spacedLine}
             >
-              Rouen • Production & contenus
+              Publicité - Marketing - Production 
             </motion.div>
           </div>
 

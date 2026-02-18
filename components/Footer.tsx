@@ -77,15 +77,15 @@ export default function Footer() {
               <div className="mt-2 space-y-1 text-sm">
                 <a
                   className="block text-white/85 hover:text-white transition"
-                  href="mailto:contact@independantstudio.fr"
+                  href="mailto:contact@independantstudio.com"
                 >
-                  contact@independantstudio.fr
+                  contact@independantstudio.com
                 </a>
                 <a
                   className="block text-white/60 hover:text-white/85 transition"
-                  href="tel:+33600000000"
+                  href="tel:+330768302130"
                 >
-                  +33 6 00 00 00 00
+                  +33 07 68 30 21 30
                 </a>
               </div>
             </div>
