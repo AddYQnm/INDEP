@@ -1,4 +1,4 @@
-'use client';
+
 
 import { InfiniteSlider } from "@/components/ui/infinite-slider";
 

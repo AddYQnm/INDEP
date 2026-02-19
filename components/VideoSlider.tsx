@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react"
 const videos = [
   {
     src: "https://res.cloudinary.com/dba299maa/video/upload/v1770261634/1_f0juwg.mp4",
-    poster: "/hero/poster.jpg", // mets un vrai poster si tu peux
+    poster: "/hero/poster.jpg",
   },
   {
     src: "https://res.cloudinary.com/dba299maa/video/upload/v1770261694/3_olqt0c.mp4",
@@ -16,10 +16,7 @@ const videos = [
     src: "https://res.cloudinary.com/dba299maa/video/upload/v1770261741/4_udv562.mp4",
     poster: "/hero/poster.jpg",
   },
-  {
-    src: "https://res.cloudinary.com/dba299maa/video/upload/v1770261741/4_udv562.mp4",
-    poster: "/hero/poster.jpg",
-  },
+ 
 ]
 
 export default function VideoSlider() {
@@ -33,14 +30,14 @@ export default function VideoSlider() {
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([])
   const [inViewport, setInViewport] = useState(false)
 
-  // Observe le conteneur pour play/pause global
+  // Observe le conteneur
   useEffect(() => {
     const el = rootRef.current
     if (!el) return
 
     const io = new IntersectionObserver(
-      (entries) => setInViewport(!!entries[0]?.isIntersecting),
-      { rootMargin: "200px" }
+      (entries) => setInViewport(entries[0]?.isIntersecting ?? false),
+      { rootMargin: "0px", threshold: 0.5 }
     )
 
     io.observe(el)
@@ -53,39 +50,32 @@ export default function VideoSlider() {
 
   const playVisible = () => {
     if (!emblaApi) return
-
-    const visible = new Set(emblaApi.slidesInView())
-
+    const selected = emblaApi.selectedScrollSnap() // index actif
     videoRefs.current.forEach((v, idx) => {
       if (!v) return
 
-      if (!inViewport || !visible.has(idx)) {
+      if (!inViewport) {
         v.pause()
         return
       }
 
-      // ✅ On autorise un petit preload seulement pour celles visibles
-      if (v.preload !== "metadata") v.preload = "metadata"
-
-      // ✅ Assure une frame affichée (iOS/Safari aime bien)
-      v.muted = true
-      v.playsInline = true
-
-      v.play().catch(() => {
-        // Si autoplay policy bloque, au moins le poster s’affiche
-      })
+      // Précharge minimal : active + suivante
+      if (idx === selected || idx === selected + 1) {
+        v.preload = "metadata"
+        v.muted = true
+        v.playsInline = true
+        v.play().catch(() => {})
+      } else {
+        v.pause()
+        v.preload = "none"
+      }
     })
   }
 
-  // Sync sur events Embla + viewport
   useEffect(() => {
     if (!emblaApi) return
 
-    const onAny = () => {
-      // force un cycle après layout
-      requestAnimationFrame(() => playVisible())
-    }
-
+    const onAny = () => requestAnimationFrame(() => playVisible())
     onAny()
     emblaApi.on("reInit", onAny)
     emblaApi.on("select", onAny)
@@ -96,13 +86,11 @@ export default function VideoSlider() {
       emblaApi.off("select", onAny)
       emblaApi.off("scroll", onAny)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [emblaApi, inViewport])
 
   useEffect(() => {
     if (!inViewport) pauseAll()
     else playVisible()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inViewport])
 
   return (

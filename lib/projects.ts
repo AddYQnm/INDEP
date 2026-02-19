@@ -19,7 +19,7 @@ export const projects: Project[] = [
     slug: "maaraja",
     title: "Maaraja",
     category: "Restaurant",
-    image: "/maaraja/5.jpg",
+    image: "/maaraja/5.JPG",
     year: "2025",
     client: "Maaraja",
     description:
@@ -28,7 +28,7 @@ export const projects: Project[] = [
     gallery: [
       "/maaraja/1.JPG",
       "/maaraja/2.JPG",
-      "/maaraja/3.JPG",
+      "/maaraja/4.JPG",
     ],
   },
   {
@@ -36,7 +36,7 @@ export const projects: Project[] = [
     slug: "drugstore",
     title: "Drugstore",
     category: "Restaurant",
-    image: "/drugstore/6.jpg",
+    image: "/drugstore/6.JPG",
     year: "2025",
     client: "Drugstore",
     description:

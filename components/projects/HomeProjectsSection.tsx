@@ -43,14 +43,17 @@ export default function HomeProjectsSection() {
               href="/projets"
               className="group relative aspect-[3/4] overflow-hidden rounded-2xl bg-gray-100 border border-black/10 shadow-[0_10px_30px_rgba(0,0,0,0.06)]"
             >
-              <Image
-                src={project.image}
-                alt={project.title}
-                fill
-                className="object-cover transition-transform duration-700 will-change-transform group-hover:scale-[1.06]"
-                sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 360px"
-                priority={idx < 2}
-              />
+          <Image
+  src={project.image}
+  alt={project.title}
+  fill
+  className="object-cover transition-transform duration-700 will-change-transform group-hover:scale-[1.06]"
+  sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 360px"
+  priority={idx < 2}
+  placeholder="blur"
+  blurDataURL="/path/to/low-res-placeholder.jpg"
+/>
+
 
               {/* overlay premium */}
               <div className="absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />

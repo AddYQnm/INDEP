@@ -36,48 +36,34 @@ export default function AllProjectsGallery() {
         </div>
 
         {/* Grid */}
-        <div className="grid gap-6 md:gap-8 sm:grid-cols-2 md:grid-cols-3">
-          {projects.map((project, idx) => (
-            <Link
-              key={project.id}
-              href={`/projets/${project.slug}`}
-              className="group"
-            >
-              <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
-                <div className="relative aspect-[3/4]">
-                  <Image
-                    src={project.image}
-                    alt={project.title}
-                    fill
-                    className="object-cover transition-transform duration-700 will-change-transform group-hover:scale-[1.06]"
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 360px"
-                    priority={idx < 3}
-                  />
-
-                  {/* overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-
-                  {/* badge */}
-                  <div className="absolute top-4 left-4 rounded-full border border-white/15 bg-black/40 px-3 py-1 text-[11px] font-semibold tracking-[0.18em] text-white/85 backdrop-blur">
-                    {project.category}
-                  </div>
-                </div>
-
-                <div className="p-5">
-                  <p className="text-[11px] uppercase tracking-[0.26em] text-white/50">
-                    {project.category}
-                  </p>
-                  <h3 className="mt-1 text-lg font-semibold tracking-tight text-white">
-                    {project.title}
-                  </h3>
-                  <p className="mt-2 text-sm text-white/60">
-                    Découvrir le projet →
-                  </p>
-                </div>
-              </div>
-            </Link>
-          ))}
+<div className="grid gap-6 md:gap-8 sm:grid-cols-2 md:grid-cols-3">
+  {projects.map((project, idx) => (
+    <Link key={project.id} href={`/projets/${project.slug}`} className="group">
+      <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-[0_4px_12px_rgba(0,0,0,0.2)]">
+        <div className="relative aspect-[3/4]">
+          <Image
+            src={project.image}
+            alt={project.title}
+            fill
+            className="object-cover transition-transform duration-500 will-change-transform group-hover:scale-105"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 360px"
+            priority={idx < 2}
+            placeholder="blur"
+            blurDataURL="/low-res-placeholder.jpg"
+          />
+          {/* overlay hover seulement */}
+          <div className="absolute inset-0 bg-black/30 opacity-0 transition-opacity duration-300 group-hover:opacity-70" />
         </div>
+        <div className="p-4 sm:p-5">
+          <p className="text-[11px] uppercase tracking-[0.26em] text-white/50">{project.category}</p>
+          <h3 className="mt-1 text-lg font-semibold text-white">{project.title}</h3>
+          <p className="mt-2 text-sm text-white/60">Découvrir le projet →</p>
+        </div>
+      </div>
+    </Link>
+  ))}
+</div>
+
       </div>
     </section>
   )
