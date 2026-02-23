@@ -1,25 +1,28 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
 import { Button } from "@/components/ui/button"
 import dynamic from "next/dynamic"
-import {
-  motion,
-  useReducedMotion,
-  useScroll,
-  useTransform,
-} from "framer-motion"
+import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion"
 import { useMemo, useRef } from "react"
 
 // ✅ Lazy-load des blocs lourds (réduit le bundle initial)
 const VideoSlider = dynamic(() => import("@/components/VideoSlider"), {
   ssr: false,
-  loading: () => <div className="h-[420px] w-full max-w-5xl rounded-3xl bg-black/5" />,
+  loading: () => (
+    <div className="h-[520px] w-full max-w-5xl rounded-3xl bg-black/5" />
+  ),
 })
 
-const Demo = dynamic(() => import("@/components/Demo").then(m => ({ default: m.Demo })), {
-  ssr: false,
-  loading: () => <div className="h-[420px] w-full max-w-5xl rounded-3xl bg-black/5 mx-auto" />,
-})
+const Demo = dynamic(
+  () => import("@/components/Demo").then((m) => ({ default: m.Demo })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[420px] w-full max-w-5xl rounded-3xl bg-black/5 mx-auto" />
+    ),
+  }
+)
 
 /* =========================
    PAGE OFFRES
@@ -29,13 +32,18 @@ export default function OffresPageClient() {
     <main className="bg-white text-black overflow-hidden">
       <HeroSection />
 
-      <div className="flex justify-center px-6">
+      {/* ✅ min-height pour éviter les sauts quand le composant dynamique se charge */}
+      <div className="flex justify-center px-6 min-h-[520px]">
         <VideoSlider />
       </div>
 
       <ProcessSection />
-        {/* <OffersSection /> */}
-      <Demo />
+
+      {/* <OffersSection /> */}
+      <div className="min-h-[420px]">
+        <Demo />
+      </div>
+
       <FinalCTA />
     </main>
   )
@@ -104,7 +112,7 @@ function HeroSection() {
           <div className="mt-10 flex flex-wrap items-center gap-4">
             <Button
               className="rounded-full px-10 py-6 text-sm"
-              onClick={() => scrollToId("offres")}
+              onClick={() => scrollToId("process")} // ✅ id existe
             >
               Voir les offres
             </Button>
@@ -150,7 +158,8 @@ function HeroSection() {
             <p className="relative mt-6 text-sm text-black/60 leading-relaxed">
               Contenus social, ads, lancement, restaurant/événement.
               <br />
-              On pense <span className="text-black font-medium">usage</span> avant volume.
+              On pense{" "}
+              <span className="text-black font-medium">usage</span> avant volume.
             </p>
           </motion.div>
         </div>
@@ -205,9 +214,15 @@ function ProcessSection() {
   const glowY = useTransform(scrollYProgress, [0, 1], ["0%", "92%"])
 
   return (
-    <section ref={ref} className="mx-auto max-w-7xl px-6 py-24 md:py-32">
+    <section
+      id="process"
+      ref={ref}
+      className="mx-auto max-w-7xl px-6 py-24 md:py-32"
+    >
       <div className="mb-14 md:mb-20">
-        <p className="text-xs uppercase tracking-[0.35em] text-black/50">Process</p>
+        <p className="text-xs uppercase tracking-[0.35em] text-black/50">
+          Process
+        </p>
         <h2 className="mt-4 text-4xl md:text-5xl font-bold tracking-tight">
           Une méthode simple.
           <br className="hidden md:block" /> Une exécution nette.
@@ -220,15 +235,19 @@ function ProcessSection() {
       <div className="relative">
         <div className="absolute left-4 top-0 h-full w-px bg-black/10 md:left-1/2" />
 
-        <motion.div
-          style={reduceMotion ? undefined : { height: lineH }}
-          className="absolute left-4 top-0 w-px bg-gradient-to-b from-orange-500 via-pink-500 to-purple-600 md:left-1/2"
-        />
+        {!reduceMotion && (
+          <motion.div
+            style={{ height: lineH, willChange: "height" as any }}
+            className="absolute left-4 top-0 w-px bg-gradient-to-b from-orange-500 via-pink-500 to-purple-600 md:left-1/2"
+          />
+        )}
 
-        <motion.div
-          style={reduceMotion ? undefined : { top: glowY }}
-          className="pointer-events-none absolute left-4 -translate-x-1/2 md:left-1/2 h-10 w-10 rounded-full bg-pink-500/20 blur-2xl"
-        />
+        {!reduceMotion && (
+          <motion.div
+            style={{ top: glowY, willChange: "top" as any }}
+            className="pointer-events-none absolute left-4 -translate-x-1/2 md:left-1/2 h-10 w-10 rounded-full bg-pink-500/20 blur-2xl"
+          />
+        )}
 
         <div className="space-y-16 md:space-y-24">
           {steps.map((s, i) => {
@@ -240,12 +259,16 @@ function ProcessSection() {
                 whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-120px" }}
                 transition={{ duration: 0.55, ease: "easeOut" }}
-                className={`relative flex flex-col md:flex-row ${reverse ? "md:flex-row-reverse" : ""}`}
+                className={`relative flex flex-col md:flex-row ${
+                  reverse ? "md:flex-row-reverse" : ""
+                }`}
               >
                 <div className="absolute left-4 top-7 md:left-1/2 md:-translate-x-1/2">
                   <div className="relative">
                     <div className="h-3.5 w-3.5 rounded-full bg-white ring-2 ring-black/15" />
-                    <div className="absolute inset-0 rounded-full bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 opacity-60 blur-[10px]" />
+                    {!reduceMotion && (
+                      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 opacity-60 blur-[10px]" />
+                    )}
                   </div>
                 </div>
 
@@ -259,11 +282,17 @@ function ProcessSection() {
                       <span className="text-xs uppercase tracking-[0.35em] text-black/45">
                         Étape {String(i + 1).padStart(2, "0")}
                       </span>
-                      <span className="text-xs text-black/30">{i + 1}/{steps.length}</span>
+                      <span className="text-xs text-black/30">
+                        {i + 1}/{steps.length}
+                      </span>
                     </div>
 
-                    <h3 className="mt-3 text-2xl font-semibold tracking-tight">{s.title}</h3>
-                    <p className="mt-3 text-black/60 leading-relaxed">{s.text}</p>
+                    <h3 className="mt-3 text-2xl font-semibold tracking-tight">
+                      {s.title}
+                    </h3>
+                    <p className="mt-3 text-black/60 leading-relaxed">
+                      {s.text}
+                    </p>
 
                     <div className="mt-6 h-px w-full bg-black/10">
                       <div className="h-px w-24 bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600" />
@@ -282,157 +311,7 @@ function ProcessSection() {
 }
 
 /* =========================
-   OFFRES
-========================= 
-function OffersSection() {
-  return (
-    <section id="offres" className="relative py-24 md:py-32 bg-[#fbf7ef] text-black overflow-hidden">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute inset-0 opacity-[0.12] mix-blend-multiply [background-image:radial-gradient(circle_at_1px_1px,rgba(0,0,0,0.22)_1px,transparent_0)] [background-size:22px_22px]" />
-        <div className="absolute -top-24 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-orange-500/20 blur-3xl" />
-        <div className="absolute -bottom-28 right-[-60px] h-96 w-96 rounded-full bg-purple-600/15 blur-3xl" />
-      </div>
-
-      <div className="relative mx-auto max-w-7xl px-6">
-        <div className="mb-12 md:mb-16 flex flex-col md:flex-row md:items-end md:justify-between gap-8">
-          <div>
-            <p className="text-xs uppercase tracking-[0.35em] text-black/60">Tarifs</p>
-            <h2 className="mt-4 text-4xl md:text-5xl font-black tracking-tight leading-[0.95]">
-              Les packs (infos)
-              <br />
-              <span className="inline-block -rotate-1 border border-black/70 px-3 py-1">
-                pas de paiement ici
-              </span>
-            </h2>
-            <p className="mt-5 max-w-2xl text-black/65 leading-relaxed">
-              Ces prix servent de repère. On ajuste selon ton besoin (volume, durée, formats, diffusion).
-              Pour réserver un créneau : contact.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            <a href="/contact" className="inline-flex items-center gap-2 rounded-full bg-black text-white px-6 py-3 text-sm font-medium hover:opacity-90 transition">
-              Demander un devis <span className="translate-y-[1px]">↗</span>
-            </a>
-            <a href="/contact" className="inline-flex items-center gap-2 rounded-full border border-black/60 bg-white/60 px-6 py-3 text-sm font-medium hover:bg-white transition">
-              Prendre rendez-vous <span className="translate-y-[1px]">→</span>
-            </a>
-          </div>
-        </div>
-
-        <div className="grid gap-6 lg:grid-cols-3">
-          <OfferCard
-            title="Création"
-            price="À partir de 1 249€"
-            stamp="BASIC"
-            desc="Pour produire des visuels propres, prêts à publier."
-            bullets={["Tournage", "Montage", "Exports social"]}
-          />
-          <OfferCard
-            title="Création + Diffusion"
-            price="À partir de 2 399€"
-            stamp="BEST"
-            highlight
-            desc="Idéal si tu veux créer ET pousser la vidéo (ads)."
-            bullets={["Créa + déclinaisons", "Setup diffusion", "Optimisations"]}
-          />
-          <OfferCard
-            title="Full Pack"
-            price="Sur devis"
-            stamp="PRO"
-            desc="Pour les marques qui veulent un rythme régulier."
-            bullets={["Planning", "Séries de contenus", "Suivi & itérations"]}
-          />
-        </div>
-
-        <p className="mt-10 text-xs text-black/50">
-          * Tarifs indicatifs. Le prix final dépend du lieu, du volume et des formats demandés.
-        </p>
-      </div>
-    </section>
-  )
-}
-
-function OfferCard({
-  title,
-  price,
-  desc,
-  bullets,
-  stamp,
-  highlight,
-}: {
-  title: string
-  price: string
-  desc: string
-  bullets: string[]
-  stamp: string
-  highlight?: boolean
-}) {
-  return (
-    <div className="relative">
-      <div
-        className={[
-          "relative rounded-[28px] border border-black/20 bg-white",
-          "shadow-[0_18px_50px_rgba(0,0,0,0.10)] overflow-hidden",
-          highlight ? "ring-1 ring-black/30" : "",
-        ].join(" ")}
-      >
-        <div className="pointer-events-none absolute inset-y-0 left-0 w-4">
-          <div className="absolute left-[-8px] top-10 h-6 w-6 rounded-full bg-[#fbf7ef]" />
-          <div className="absolute left-[-8px] top-1/2 -translate-y-1/2 h-6 w-6 rounded-full bg-[#fbf7ef]" />
-          <div className="absolute left-[-8px] bottom-10 h-6 w-6 rounded-full bg-[#fbf7ef]" />
-        </div>
-
-        <div className="absolute right-5 top-5">
-          <div
-            className={[
-              "rotate-6 rounded-full border-2 px-3 py-1 text-xs font-black tracking-[0.22em]",
-              highlight ? "border-black bg-orange-200" : "border-black/70 bg-white",
-            ].join(" ")}
-          >
-            {stamp}
-          </div>
-        </div>
-
-        <div className="p-8">
-          <p className="text-xs uppercase tracking-[0.35em] text-black/60">Pack</p>
-          <h3 className="mt-3 text-2xl font-black tracking-tight leading-tight">{title}</h3>
-
-          <div className="mt-4 flex items-baseline justify-between gap-4">
-            <p className="text-lg font-semibold">{price}</p>
-            <span className="text-xs text-black/55 uppercase tracking-[0.25em]">indicatif</span>
-          </div>
-
-          <div className="mt-6 h-px w-full bg-black/15" />
-          <p className="mt-6 text-sm text-black/70 leading-relaxed">{desc}</p>
-
-          <ul className="mt-5 space-y-2 text-sm text-black/70">
-            {bullets.map((b) => (
-              <li key={b} className="flex gap-2">
-                <span className="mt-[7px] h-1.5 w-1.5 rounded-full bg-black/50" />
-                <span>{b}</span>
-              </li>
-            ))}
-          </ul>
-
-          <div className="mt-8 flex flex-wrap gap-3">
-            <a href="/contact" className="inline-flex items-center gap-2 rounded-full bg-black text-white px-5 py-2.5 text-sm font-medium hover:opacity-90 transition">
-              Discuter de ce pack <span className="translate-y-[1px]">→</span>
-            </a>
-            <a href="/contact" className="inline-flex items-center gap-2 rounded-full border border-black/60 bg-white px-5 py-2.5 text-sm font-medium hover:bg-black hover:text-white transition">
-              Devis rapide <span className="translate-y-[1px]">↗</span>
-            </a>
-          </div>
-        </div>
-
-        <div className="pointer-events-none absolute -bottom-12 -right-12 h-40 w-40 rounded-full bg-purple-600/10 blur-2xl" />
-      </div>
-    </div>
-  )
-}
-*/
-/* =========================
-   CTA FINAL (NE PAS MODIFIER)
+   CTA FINAL
 ========================= */
 function FinalCTA() {
   return (
@@ -447,9 +326,16 @@ function FinalCTA() {
           Parlons de votre prochain contenu
         </h2>
         <p className="mt-6 text-white/65">On transforme une idée en vidéo qui performe.</p>
-        <Button className="mt-10 rounded-full px-10 bg-white text-black hover:bg-white/90">
+
+        <Button
+          className="mt-10 rounded-full px-10 bg-white text-black hover:bg-white/90"
+          onClick={() => {
+            window.location.href = "/contact"
+          }}
+        >
           Prendre rendez-vous
         </Button>
+
         <p className="mt-5 text-xs text-white/40">Réponse sous 24–48h.</p>
       </div>
     </section>

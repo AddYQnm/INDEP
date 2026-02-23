@@ -31,39 +31,98 @@ export default function AllProjectsGallery() {
           </h1>
 
           <p className="mt-5 text-base md:text-lg text-white/65 leading-relaxed">
-            Des projets tous secteurs confondus, avec une approche créative et orientée performance.
+            Des projets tous secteurs confondus, avec une approche créative et
+            orientée performance.
           </p>
         </div>
 
-        {/* Grid */}
-<div className="grid gap-6 md:gap-8 sm:grid-cols-2 md:grid-cols-3">
-  {projects.map((project, idx) => (
-    <Link key={project.id} href={`/projets/${project.slug}`} className="group">
-      <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-[0_4px_12px_rgba(0,0,0,0.2)]">
-        <div className="relative aspect-[3/4]">
-          <Image
-            src={project.image}
-            alt={project.title}
-            fill
-            className="object-cover transition-transform duration-500 will-change-transform group-hover:scale-105"
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 360px"
-            priority={idx < 2}
-            placeholder="blur"
-            blurDataURL="/low-res-placeholder.jpg"
-          />
-          {/* overlay hover seulement */}
-          <div className="absolute inset-0 bg-black/30 opacity-0 transition-opacity duration-300 group-hover:opacity-70" />
-        </div>
-        <div className="p-4 sm:p-5">
-          <p className="text-[11px] uppercase tracking-[0.26em] text-white/50">{project.category}</p>
-          <h3 className="mt-1 text-lg font-semibold text-white">{project.title}</h3>
-          <p className="mt-2 text-sm text-white/60">Découvrir le projet →</p>
-        </div>
-      </div>
-    </Link>
-  ))}
-</div>
+        {/* ✅ Grid (plus stable + sans “bug” d’images/hover) */}
+        <div className="grid gap-6 md:gap-8 sm:grid-cols-2 md:grid-cols-3">
+          {projects.map((project, idx) => (
+            <Link
+              key={project.id ?? project.slug}
+              href={`/projets/${project.slug}`}
+              className="group block focus:outline-none"
+              prefetch={false} // ✅ évite du jank si tu as beaucoup de projets
+              aria-label={`Découvrir ${project.title}`}
+            >
+              <article
+                className={[
+                  "relative overflow-hidden rounded-2xl border border-white/10 bg-white/5",
+                  "shadow-[0_4px_12px_rgba(0,0,0,0.2)]",
+                  "transition-transform duration-200",
+                  "focus-within:ring-2 focus-within:ring-[#2e8a96]/70",
+                ].join(" ")}
+              >
+                {/* ✅ ratio stable + évite certains glitches Safari avec images en transform */}
+                <div className="relative aspect-[3/4] overflow-hidden">
+                  <Image
+                    src={project.image}
+                    alt={project.title}
+                    fill
+                    // ✅ transform GPU + évite micro-saccades
+                    className="object-cover transform-gpu transition-transform duration-500 will-change-transform group-hover:scale-105"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 360px"
+                    priority={idx < 2}
+                    // ✅ IMPORTANT: placeholder blur only si blurDataURL existe vraiment
+                    // Si tu n’as pas de blurDataURL par image, ne mets pas placeholder="blur"
+                    placeholder={project.blurDataURL ? "blur" : "empty"}
+                    blurDataURL={project.blurDataURL}
+                  />
 
+                  {/* ✅ overlay: pas de click “bloqué”, et transition clean */}
+                  <div className="pointer-events-none absolute inset-0 bg-black/30 opacity-0 transition-opacity duration-300 group-hover:opacity-70" />
+
+                  {/* ✅ mini badge (optionnel, mais utile + stable) */}
+                  {project.category ? (
+                    <div className="pointer-events-none absolute left-4 top-4 rounded-full border border-white/15 bg-black/40 px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-white/75 backdrop-blur">
+                      {project.category}
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="p-4 sm:p-5">
+                  <h3 className="text-lg font-semibold text-white">
+                    {project.title}
+                  </h3>
+
+                  {project.shortDesc ? (
+                    <p className="mt-2 text-sm text-white/60 line-clamp-2">
+                      {project.shortDesc}
+                    </p>
+                  ) : (
+                    <p className="mt-2 text-sm text-white/60">
+                      Découvrir le projet →
+                    </p>
+                  )}
+
+                  <div className="mt-4 flex items-center justify-between">
+                    <span className="text-sm text-white/70">
+                      Découvrir{" "}
+                      <span className="inline-block transition-transform duration-200 group-hover:translate-x-0.5">
+                        →
+                      </span>
+                    </span>
+
+                    <span className="h-9 w-9 rounded-full border border-white/15 bg-white/5 grid place-items-center transition-colors duration-200 group-hover:bg-white/10">
+                      <span className="text-white/85">↗</span>
+                    </span>
+                  </div>
+                </div>
+
+                {/* ✅ hover lift léger (moins “buggy” que sur l’image) */}
+                <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                  <div className="absolute inset-0 shadow-[0_18px_60px_rgba(46,138,150,0.12)]" />
+                </div>
+              </article>
+            </Link>
+          ))}
+        </div>
+
+        {/* ✅ petits détails utiles si beaucoup de cards */}
+        <p className="mt-10 text-xs text-white/45">
+          Astuce : clique sur une card pour voir le détail du projet.
+        </p>
       </div>
     </section>
   )

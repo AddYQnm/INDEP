@@ -1,7 +1,7 @@
 "use client"
 
 import useEmblaCarousel from "embla-carousel-react"
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 const videos = [
   {
@@ -16,7 +16,6 @@ const videos = [
     src: "https://res.cloudinary.com/dba299maa/video/upload/v1770261741/4_udv562.mp4",
     poster: "/hero/poster.jpg",
   },
- 
 ]
 
 export default function VideoSlider() {
@@ -30,7 +29,7 @@ export default function VideoSlider() {
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([])
   const [inViewport, setInViewport] = useState(false)
 
-  // Observe le conteneur
+  // Observe le conteneur pour ne jouer que quand visible
   useEffect(() => {
     const el = rootRef.current
     if (!el) return
@@ -44,13 +43,44 @@ export default function VideoSlider() {
     return () => io.disconnect()
   }, [])
 
-  const pauseAll = () => {
-    videoRefs.current.forEach((v) => v?.pause())
-  }
+  const pauseAll = useCallback(() => {
+    videoRefs.current.forEach((v) => {
+      if (!v) return
+      v.pause()
+    })
+  }, [])
 
-  const playVisible = () => {
+  // Attend canplay + force load() (important quand preload était "none")
+  const ensurePlayable = useCallback(async (v: HTMLVideoElement) => {
+    v.muted = true
+    v.playsInline = true
+    v.loop = true
+
+    // Plus stable que jouer au yoyo avec preload
+    v.preload = "metadata"
+    v.load()
+
+    // Attend que ça puisse jouer (Safari/iOS est capricieux)
+    if (v.readyState < 3) {
+      await new Promise<void>((resolve) => {
+        const onCanPlay = () => resolve()
+        v.addEventListener("canplay", onCanPlay, { once: true })
+        // filet de sécurité
+        setTimeout(resolve, 1500)
+      })
+    }
+
+    try {
+      await v.play()
+    } catch {
+      // autoplay peut échouer selon device/OS; on ignore
+    }
+  }, [])
+
+  const playVisible = useCallback(() => {
     if (!emblaApi) return
-    const selected = emblaApi.selectedScrollSnap() // index actif
+    const selected = emblaApi.selectedScrollSnap()
+
     videoRefs.current.forEach((v, idx) => {
       if (!v) return
 
@@ -59,39 +89,43 @@ export default function VideoSlider() {
         return
       }
 
-      // Précharge minimal : active + suivante
-      if (idx === selected || idx === selected + 1) {
-        v.preload = "metadata"
-        v.muted = true
-        v.playsInline = true
-        v.play().catch(() => {})
+      // active + suivante (précharge légère)
+      const shouldPlay = idx === selected || idx === selected + 1
+
+      if (shouldPlay) {
+        void ensurePlayable(v)
       } else {
         v.pause()
+        // si tu veux économiser plus: "none"
+        // si tu veux plus stable iOS: "metadata"
         v.preload = "none"
       }
     })
-  }
+  }, [emblaApi, inViewport, ensurePlayable])
 
+  // Embla events: évite "scroll" (trop fréquent), utilise "settle"
   useEffect(() => {
     if (!emblaApi) return
 
-    const onAny = () => requestAnimationFrame(() => playVisible())
+    const onAny = () => requestAnimationFrame(playVisible)
     onAny()
+
     emblaApi.on("reInit", onAny)
     emblaApi.on("select", onAny)
-    emblaApi.on("scroll", onAny)
+    emblaApi.on("settle", onAny)
 
     return () => {
       emblaApi.off("reInit", onAny)
       emblaApi.off("select", onAny)
-      emblaApi.off("scroll", onAny)
+      emblaApi.off("settle", onAny)
     }
-  }, [emblaApi, inViewport])
+  }, [emblaApi, playVisible])
 
+  // Quand on sort/entre dans le viewport
   useEffect(() => {
     if (!inViewport) pauseAll()
     else playVisible()
-  }, [inViewport])
+  }, [inViewport, pauseAll, playVisible])
 
   return (
     <div
@@ -104,7 +138,7 @@ export default function VideoSlider() {
       <div className="flex gap-6">
         {videos.map((v, index) => (
           <VideoItem
-            key={index}
+            key={v.src}
             src={v.src}
             poster={v.poster}
             setRef={(el) => {
@@ -138,6 +172,17 @@ function VideoItem({
           loop
           preload="none"
           className="h-full w-full object-cover"
+          // Debug (tu peux supprimer après)
+          onError={(e) => {
+            const v = e.currentTarget
+            console.log("VIDEO ERROR", src, v.error, {
+              networkState: v.networkState,
+              readyState: v.readyState,
+              currentSrc: v.currentSrc,
+            })
+          }}
+          onStalled={() => console.log("VIDEO STALLED", src)}
+          onWaiting={() => console.log("VIDEO WAITING", src)}
         />
       </div>
     </div>

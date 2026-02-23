@@ -1,6 +1,5 @@
 "use client"
 
-import Image from "next/image"
 import { useEffect, useRef } from "react"
 
 function clamp(n: number, min: number, max: number) {
@@ -17,15 +16,21 @@ export default function Hero() {
   const currentY = useRef(0)
   const targetY = useRef(0)
 
+  // ✅ évite spam de play/pause et erreurs "play() interrupted"
+  const playPromiseRef = useRef<Promise<void> | null>(null)
+  const lastVisibleRef = useRef<boolean>(false)
+
   useEffect(() => {
     const el = mediaRef.current
+    const v = videoRef.current
     if (!el) return
 
-    // ✅ helper: applique la transform sans setState (pas de re-render)
+    // ✅ applique la transform sans re-render
     const applyTransform = (y: number) => {
       el.style.setProperty("--parallax-y", `${y.toFixed(2)}px`)
     }
 
+    // ✅ calcule la cible
     const updateTarget = () => {
       const rect = el.getBoundingClientRect()
       const vh = window.innerHeight
@@ -36,13 +41,12 @@ export default function Hero() {
       targetY.current = (t - 0.5) * 80 // -40..+40
     }
 
-    // ✅ RAF “intelligent” : tourne seulement le temps d’atteindre la cible
+    // ✅ RAF “intelligent” : tourne uniquement pendant l’animation
     const tick = () => {
       const next = currentY.current + (targetY.current - currentY.current) * 0.10
       currentY.current = next
       applyTransform(next)
 
-      // stop quand c’est quasi stable
       if (Math.abs(targetY.current - currentY.current) < 0.1) {
         rafRef.current = null
         return
@@ -50,34 +54,75 @@ export default function Hero() {
       rafRef.current = requestAnimationFrame(tick)
     }
 
+    // ✅ throttle via RAF (scroll peut spammer)
+    let scrollScheduled = false
     const requestTick = () => {
-      updateTarget()
-      if (rafRef.current == null) rafRef.current = requestAnimationFrame(tick)
+      if (scrollScheduled) return
+      scrollScheduled = true
+      requestAnimationFrame(() => {
+        scrollScheduled = false
+        updateTarget()
+        if (rafRef.current == null) rafRef.current = requestAnimationFrame(tick)
+      })
     }
 
-    // ✅ 1) Parallax : on déclenche sur scroll/resize (pas en boucle infinie)
+    // 1) Parallax
     requestTick()
     window.addEventListener("scroll", requestTick, { passive: true })
     window.addEventListener("resize", requestTick)
 
-    // ✅ 2) Vidéo : play/pause quand visible (énorme gain mobile)
-    const v = videoRef.current
+    // 2) Vidéo: play/pause quand visible (avec load() + garde-fous)
     let io: IntersectionObserver | null = null
+
+    const safePlay = async () => {
+      if (!v) return
+      // évite play() spam
+      if (playPromiseRef.current) return
+
+      // force un chargement si preload="none"
+      v.preload = "metadata"
+      v.load()
+
+      playPromiseRef.current = v
+        .play()
+        .catch(() => {})
+        .finally(() => {
+          playPromiseRef.current = null
+        }) as Promise<void>
+    }
+
+    const safePause = () => {
+      if (!v) return
+      v.pause()
+    }
 
     if (v) {
       io = new IntersectionObserver(
         (entries) => {
-          const visible = entries[0]?.isIntersecting
+          const visible = !!entries[0]?.isIntersecting
+
+          // évite toggles rapides
+          if (visible === lastVisibleRef.current) return
+          lastVisibleRef.current = visible
+
           if (!visible) {
-            v.pause()
+            safePause()
+            // optionnel: si tu veux économiser plus, coupe le réseau:
+            v.preload = "none"
           } else {
-            // play peut échouer (policy), on ignore
-            v.play().catch(() => {})
+            void safePlay()
           }
         },
-        { rootMargin: "200px" }
+        { rootMargin: "200px 0px", threshold: 0.15 }
       )
+
       io.observe(el)
+
+      // ✅ debug soft (tu peux enlever)
+      v.addEventListener("error", () => {
+        // eslint-disable-next-line no-console
+        console.log("HERO VIDEO ERROR", v.currentSrc, v.error)
+      })
     }
 
     return () => {
@@ -100,8 +145,6 @@ export default function Hero() {
       </div>
 
       <div className="relative mx-auto w-full max-w-[1100px]">
-        {/* TOP BAR */}
-
         {/* TITRE */}
         <h1 className="mt-10 text-[clamp(48px,10vw,120px)] leading-[0.9] tracking-[-0.03em] font-bold animate-in fade-in slide-in-from-bottom-6 duration-700 delay-150">
           <span className="bg-clip-text text-transparent bg-gradient-to-b from-foreground via-foreground to-foreground/60">
@@ -123,8 +166,9 @@ export default function Hero() {
             </p>
 
             <div className="mt-5 flex flex-wrap items-center gap-3">
+              {/* ✅ bug: href="contact" doit être "/contact" ou "#contact" */}
               <a
-                href="contact"
+                href="/contact"
                 className="group inline-flex items-center gap-2 rounded-full bg-foreground text-background px-5 py-2.5 text-sm font-semibold shadow-sm hover:shadow-md transition"
               >
                 Démarrer un projet
@@ -169,7 +213,7 @@ export default function Hero() {
           className="mt-10 relative h-[clamp(260px,38vw,520px)] w-full rounded-3xl border border-border/70 overflow-hidden bg-black animate-in fade-in zoom-in-95 duration-700 delay-500"
         >
           <div
-            className="absolute inset-0 will-change-transform"
+            className="absolute inset-0 will-change-transform transform-gpu"
             style={{
               transform: "translateY(var(--parallax-y, 0px)) scale(1.10)",
             }}
@@ -177,6 +221,7 @@ export default function Hero() {
             <video
               ref={videoRef}
               className="h-full w-full object-cover"
+              // ✅ on laisse autoplay, mais l’IO gère play/pause + load
               autoPlay
               muted
               loop
@@ -184,6 +229,7 @@ export default function Hero() {
               preload="none"
               poster={poster}
             >
+              {/* ✅ webm d’abord OK, mp4 fallback OK */}
               <source
                 src="https://res.cloudinary.com/dba299maa/video/upload/3_s5r0qc.webm"
                 type="video/webm"
