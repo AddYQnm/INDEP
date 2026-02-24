@@ -1,10 +1,13 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from "next"
 
 const nextConfig: NextConfig = {
-  output: "export",
-  images: {
-    unoptimized: true,
-  },
-};
+  // ✅ IMPORTANT: enlever output: "export" pour autoriser /api/*
+  // output: "export",
 
-export default nextConfig;
+  images: {
+    // ✅ Sur Vercel, tu peux remettre l’optimisation Next
+    unoptimized: false,
+  },
+}
+
+export default nextConfig
