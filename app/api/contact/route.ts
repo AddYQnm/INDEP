@@ -3,7 +3,7 @@
 import { NextResponse } from "next/server"
 import nodemailer from "nodemailer"
 
-export const runtime = "nodejs" // ✅ force Node runtime
+export const runtime = "nodejs"
 
 function isValidEmail(email: string) {
   return /^\S+@\S+\.\S+$/.test(email)
@@ -16,6 +16,24 @@ function escapeHtml(str: string) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;")
+}
+
+/**
+ * ✅ GET : évite le 405 si quelqu’un (ou le navigateur) ouvre /api/contact
+ */
+export async function GET() {
+  return NextResponse.json({
+    ok: true,
+    message: "Contact API is running. Use POST to send messages.",
+  })
+}
+
+/**
+ * ✅ OPTIONS : utile si un jour tu fais des appels cross-domain (CORS / preflight)
+ * (sinon tu peux l’enlever)
+ */
+export async function OPTIONS() {
+  return NextResponse.json({ ok: true })
 }
 
 export async function POST(req: Request) {
@@ -77,11 +95,10 @@ export async function POST(req: Request) {
         user: GMAIL_USER,
         pass: GMAIL_APP_PASSWORD,
       },
-      // ⚠️ DEV ONLY: évite l'erreur "self-signed certificate"
+      // ⚠️ DEV ONLY: évite l'erreur "self-signed certificate" sur ton PC
       ...(isDev ? { tls: { rejectUnauthorized: false } } : {}),
     })
 
-    // Donne une erreur claire si auth / TLS / réseau
     await transporter.verify()
 
     // -------- Email content
@@ -98,7 +115,6 @@ export async function POST(req: Request) {
       replyTo: email,
       subject,
 
-      // ✅ TEXTE
       text: [
         `NOUVEAU MESSAGE (site)`,
         `Date: ${dateFR}`,
@@ -116,15 +132,12 @@ export async function POST(req: Request) {
         `User-Agent: ${userAgent}`,
       ].join("\n"),
 
-      // ✅ HTML (premium)
       html: `
 <div style="margin:0;padding:0;background:#0b0b0d;">
   <table width="100%" cellpadding="0" cellspacing="0" style="padding:28px 0;">
     <tr>
       <td align="center" style="padding:0 16px;">
         <table width="640" style="max-width:640px;width:100%;">
-          
-          <!-- HEADER -->
           <tr>
             <td style="padding:18px;">
               <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;color:#fff;">
@@ -148,7 +161,6 @@ export async function POST(req: Request) {
             </td>
           </tr>
 
-          <!-- CARD -->
           <tr>
             <td style="padding:0 18px 18px;">
               <table width="100%" cellpadding="0" cellspacing="0"
@@ -161,16 +173,12 @@ export async function POST(req: Request) {
 
                 <tr>
                   <td style="padding:18px;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;color:#fff;">
-                    
-                    <!-- INFOS -->
                     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:14px;">
                       <tr>
                         <td style="padding:10px 12px;border:1px solid rgba(255,255,255,0.1);border-radius:16px;background:rgba(0,0,0,0.25);">
                           <div style="font-size:11px;letter-spacing:0.24em;text-transform:uppercase;color:rgba(255,255,255,0.55);">Email</div>
                           <div style="margin-top:6px;font-size:14px;font-weight:700;">
-                            <a href="mailto:${h(email)}" style="color:#fff;text-decoration:none;">${h(
-    email
-  )}</a>
+                            <a href="mailto:${h(email)}" style="color:#fff;text-decoration:none;">${h(email)}</a>
                           </div>
                         </td>
                         <td width="12"></td>
@@ -183,7 +191,6 @@ export async function POST(req: Request) {
                       </tr>
                     </table>
 
-                    <!-- MESSAGE -->
                     <div style="padding:14px;border-radius:18px;background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.1);">
                       <div style="font-size:12px;letter-spacing:0.26em;text-transform:uppercase;color:rgba(255,255,255,0.55);margin-bottom:10px;">
                         Message
@@ -193,7 +200,6 @@ export async function POST(req: Request) {
                       </div>
                     </div>
 
-                    <!-- CTA -->
                     <div style="margin-top:16px;">
                       <a href="${replyHref}"
                         style="display:inline-block;background:#2e8a96;color:#0b0b0d;
@@ -206,7 +212,6 @@ export async function POST(req: Request) {
                       </span>
                     </div>
 
-                    <!-- META -->
                     <div style="margin-top:18px;padding-top:14px;border-top:1px dashed rgba(255,255,255,0.15);
                                 font-size:12px;line-height:1.6;color:rgba(255,255,255,0.5);">
                       <div style="letter-spacing:0.22em;text-transform:uppercase;margin-bottom:6px;">
@@ -223,7 +228,6 @@ export async function POST(req: Request) {
             </td>
           </tr>
 
-          <!-- FOOTER -->
           <tr>
             <td style="padding:0 18px 12px;font-size:12px;color:rgba(255,255,255,0.4);">
               Independant Studio • Formulaire du site
