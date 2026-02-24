@@ -9,21 +9,21 @@ const features = [
     title: "Trafic & Ventes",
     content:
       "Grâce à Meta Ads et à notre expertise, nous générons rapidement du trafic qualifié vers votre site et transformons les visiteurs en clients grâce à des campagnes ciblées et intelligentes.",
-    image: "/feat/feat1.png",
+    image: "/feat/trafic.png",
   },
   {
     step: "Étape 2",
     title: "Notoriété de marque",
     content:
       "La publicité est un levier puissant pour faire connaître votre marque, vos produits et vos services auprès d’une audience large et parfaitement ciblée.",
-    image: "/feat/feat2.png",
+    image: "/feat/notoriété.png",
   },
   {
     step: "Étape 3",
     title: "Communauté & Fidélisation",
     content:
       "Nous vous aidons à créer une communauté engagée autour de votre marque afin de fidéliser vos clients et transformer votre audience en véritable levier de croissance.",
-    image: "/feat/feat3.png",
+    image: "/feat/commu.png",
   },
 ]
 

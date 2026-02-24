@@ -1,4 +1,5 @@
 'use client';
+
 import { cn } from '@/lib/utils';
 import { useMotionValue, animate, motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
@@ -12,6 +13,10 @@ type InfiniteSliderProps = {
   direction?: 'horizontal' | 'vertical';
   reverse?: boolean;
   className?: string;
+
+  // ✅ Mobile tuning (optionnel)
+  mobileScale?: number;       // ex: 0.85
+  mobileDuration?: number;    // ex: 14 (plus petit = plus rapide)
 };
 
 export function InfiniteSlider({
@@ -22,16 +27,41 @@ export function InfiniteSlider({
   direction = 'horizontal',
   reverse = false,
   className,
+
+  // Valeurs par défaut demandées
+  mobileScale = 0.85,
+  mobileDuration = 14,
 }: InfiniteSliderProps) {
-  const [currentDuration, setCurrentDuration] = useState(duration);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile (sm < 640px)
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 639px)');
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener?.('change', update);
+    return () => mq.removeEventListener?.('change', update);
+  }, []);
+
+  const effectiveDuration = isMobile ? mobileDuration : duration;
+
+  const [currentDuration, setCurrentDuration] = useState(effectiveDuration);
   const [ref, { width, height }] = useMeasure();
   const translation = useMotionValue(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [key, setKey] = useState(0);
 
+  // Quand on change mobile/desktop => reset duration proprement
+  useEffect(() => {
+    setIsTransitioning(true);
+    setCurrentDuration(effectiveDuration);
+  }, [effectiveDuration]);
+
   useEffect(() => {
     let controls;
     const size = direction === 'horizontal' ? width : height;
+    if (!size) return;
+
     const contentSize = size + gap;
     const from = reverse ? -contentSize / 2 : 0;
     const to = reverse ? 0 : -contentSize / 2;
@@ -72,29 +102,30 @@ export function InfiniteSlider({
     reverse,
   ]);
 
-  const hoverProps = durationOnHover
-    ? {
-        onHoverStart: () => {
-          setIsTransitioning(true);
-          setCurrentDuration(durationOnHover);
-        },
-        onHoverEnd: () => {
-          setIsTransitioning(true);
-          setCurrentDuration(duration);
-        },
-      }
-    : {};
+  const hoverProps =
+    durationOnHover && !isMobile
+      ? {
+          onHoverStart: () => {
+            setIsTransitioning(true);
+            setCurrentDuration(durationOnHover);
+          },
+          onHoverEnd: () => {
+            setIsTransitioning(true);
+            setCurrentDuration(duration);
+          },
+        }
+      : {};
 
   return (
-    <div className={cn('overflow-hidden ', className)} >
+    <div className={cn('overflow-hidden', className)}>
       <motion.div
-        className='flex w-max'
+        className="flex w-max"
         style={{
-          ...(direction === 'horizontal'
-            ? { x: translation }
-            : { y: translation }),
+          ...(direction === 'horizontal' ? { x: translation } : { y: translation }),
           gap: `${gap}px`,
           flexDirection: direction === 'horizontal' ? 'row' : 'column',
+          // ✅ plus petit sur mobile
+          ...(isMobile ? { scale: mobileScale, transformOrigin: 'left center' } : {}),
         }}
         ref={ref}
         {...hoverProps}

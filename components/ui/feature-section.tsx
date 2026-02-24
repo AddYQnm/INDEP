@@ -25,7 +25,8 @@ export function FeatureSteps({
   className,
   title = "How to get Started",
   autoPlayInterval = 3000,
-  imageHeight = "h-[400px]",
+  // 🔽 Images plus petites sur mobile, desktop inchangé
+  imageHeight = "h-[220px] sm:h-[260px] md:h-[320px] lg:h-[400px]",
 }: FeatureStepsProps) {
   const [currentFeature, setCurrentFeature] = useState(0)
 
@@ -39,9 +40,11 @@ export function FeatureSteps({
     return () => window.clearInterval(id)
   }, [features.length, autoPlayInterval])
 
-  // Memoiser current + next pour préchargement minimal
-  const current = useMemo(() => features[currentFeature], [features, currentFeature])
-  const next = useMemo(() => features[(currentFeature + 1) % features.length], [features, currentFeature])
+  // Memo current
+  const current = useMemo(
+    () => features[currentFeature],
+    [features, currentFeature]
+  )
 
   return (
     <div className={cn("p-8 md:p-12", className)}>
@@ -69,41 +72,55 @@ export function FeatureSteps({
                       : "bg-muted border-muted-foreground"
                   )}
                 >
-                  {index <= currentFeature ? <span className="text-lg font-bold">✓</span> : <span className="text-lg font-semibold">{index + 1}</span>}
+                  {index <= currentFeature ? (
+                    <span className="text-lg font-bold">✓</span>
+                  ) : (
+                    <span className="text-lg font-semibold">
+                      {index + 1}
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex-1">
-                  <h3 className="text-xl md:text-2xl font-semibold">{feature.title || feature.step}</h3>
-                  <p className="text-sm md:text-lg text-muted-foreground">{feature.content}</p>
+                  <h3 className="text-xl md:text-2xl font-semibold">
+                    {feature.title || feature.step}
+                  </h3>
+                  <p className="text-sm md:text-lg text-muted-foreground">
+                    {feature.content}
+                  </p>
                 </div>
               </div>
             ))}
           </div>
 
           {/* Image Crossfade */}
-          <div className={cn("order-1 md:order-2 relative overflow-hidden rounded-lg", imageHeight)}>
+          <div
+            className={cn(
+              "order-1 md:order-2 relative overflow-hidden rounded-lg max-h-[320px] sm:max-h-[360px] md:max-h-none",
+              imageHeight
+            )}
+          >
             <AnimatePresence mode="wait">
-              {[current].map((feature, index) => (
-                <motion.div
-                  key={feature.step}
-                  className="absolute inset-0 rounded-lg overflow-hidden"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.5, ease: "easeInOut" }}
-                >
-                  <Image
-                    src={feature.image}
-                    alt={feature.step}
-                    className="w-full h-full object-cover"
-                    width={1000}
-                    height={500}
-                    placeholder="blur"
-                    blurDataURL="/low-res-placeholder.jpg"
-                  />
-                  <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-background via-background/50 to-transparent" />
-                </motion.div>
-              ))}
+              <motion.div
+                key={current.step}
+                className="absolute inset-0 rounded-lg overflow-hidden"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.5, ease: "easeInOut" }}
+              >
+                <Image
+                  src={current.image}
+                  alt={current.step}
+                  className="w-full h-full object-cover"
+                  width={1000}
+                  height={500}
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  placeholder="blur"
+                  blurDataURL="/low-res-placeholder.jpg"
+                />
+                <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-background via-background/50 to-transparent" />
+              </motion.div>
             </AnimatePresence>
           </div>
         </div>
