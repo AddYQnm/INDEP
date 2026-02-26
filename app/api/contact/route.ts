@@ -2,6 +2,7 @@
 // app/api/contact/route.ts
 import { NextResponse } from "next/server"
 import nodemailer from "nodemailer"
+import { Redis } from "@upstash/redis"
 
 export const runtime = "nodejs"
 
@@ -18,29 +19,79 @@ function escapeHtml(str: string) {
     .replaceAll("'", "&#039;")
 }
 
-/**
- * ✅ GET : évite le 405 si quelqu’un (ou le navigateur) ouvre /api/contact
- */
-export async function GET() {
-  return NextResponse.json({
-    ok: true,
-    message: "Contact API is running. Use POST to send messages.",
-  })
+const redis =
+  process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+    ? new Redis({
+        url: process.env.UPSTASH_REDIS_REST_URL,
+        token: process.env.UPSTASH_REDIS_REST_TOKEN,
+      })
+    : null
+
+async function rateLimitOrThrow(ip: string) {
+  // 5 requêtes / 60s / IP
+  const LIMIT = 5
+  const WINDOW_SECONDS = 60
+
+  if (!redis) return { ok: true as const } // si Upstash pas configuré, on laisse passer
+
+  const key = `rl:contact:${ip}`
+  const n = await redis.incr(key)
+  if (n === 1) await redis.expire(key, WINDOW_SECONDS)
+
+  if (n > LIMIT) {
+    return { ok: false as const, retryAfter: WINDOW_SECONDS }
+  }
+  return { ok: true as const }
 }
 
-/**
- * ✅ OPTIONS : utile si un jour tu fais des appels cross-domain (CORS / preflight)
- * (sinon tu peux l’enlever)
- */
+/** GET : évite 405 si ouverture navigateur */
+export async function GET() {
+  return NextResponse.json(
+    { ok: true, message: "Contact API is running. Use POST to send messages." },
+    { headers: { "Cache-Control": "no-store" } }
+  )
+}
+
 export async function OPTIONS() {
-  return NextResponse.json({ ok: true })
+  return NextResponse.json({ ok: true }, { headers: { "Cache-Control": "no-store" } })
 }
 
 export async function POST(req: Request) {
   try {
-    // -------- Parse body
     const body = await req.json().catch(() => null)
 
+    // -------- META (IP, UA, referer)
+    const headers = req.headers
+    const userAgent = headers.get("user-agent") || "Inconnu"
+    const referer = headers.get("referer") || "Direct / inconnu"
+    const ip =
+      headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      headers.get("x-real-ip") ||
+      "unknown"
+
+    // -------- Honeypot (champ caché)
+    const website = String(body?.website ?? "").trim()
+    if (website) {
+      // bot : on renvoie OK pour ne pas donner d'info
+      return NextResponse.json({ ok: true }, { headers: { "Cache-Control": "no-store" } })
+    }
+
+    // -------- Rate limit (Upstash)
+    const rl = await rateLimitOrThrow(ip)
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: "Trop de tentatives. Réessayez dans quelques instants." },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(rl.retryAfter),
+            "Cache-Control": "no-store",
+          },
+        }
+      )
+    }
+
+    // -------- Parse + validate
     const name = String(body?.name ?? "").trim()
     const email = String(body?.email ?? "").trim()
     const company = String(body?.company ?? "").trim()
@@ -49,13 +100,26 @@ export async function POST(req: Request) {
     if (!name || !email || !message) {
       return NextResponse.json(
         { error: "Champs obligatoires manquants." },
-        { status: 400 }
+        { status: 400, headers: { "Cache-Control": "no-store" } }
       )
     }
 
     if (!isValidEmail(email)) {
-      return NextResponse.json({ error: "Email invalide." }, { status: 400 })
+      return NextResponse.json(
+        { error: "Email invalide." },
+        { status: 400, headers: { "Cache-Control": "no-store" } }
+      )
     }
+
+    // tailles max anti-spam
+    if (name.length > 80)
+      return NextResponse.json({ error: "Nom trop long." }, { status: 400, headers: { "Cache-Control": "no-store" } })
+    if (email.length > 120)
+      return NextResponse.json({ error: "Email trop long." }, { status: 400, headers: { "Cache-Control": "no-store" } })
+    if (company.length > 120)
+      return NextResponse.json({ error: "Entreprise trop longue." }, { status: 400, headers: { "Cache-Control": "no-store" } })
+    if (message.length > 4000)
+      return NextResponse.json({ error: "Message trop long." }, { status: 400, headers: { "Cache-Control": "no-store" } })
 
     // -------- Env
     const GMAIL_USER = process.env.GMAIL_USER
@@ -64,74 +128,53 @@ export async function POST(req: Request) {
 
     if (!GMAIL_USER || !GMAIL_APP_PASSWORD || !CONTACT_TO) {
       return NextResponse.json(
-        {
-          error:
-            "Config email manquante. Vérifie GMAIL_USER / GMAIL_APP_PASSWORD / CONTACT_TO.",
-        },
-        { status: 500 }
+        { error: "Config email manquante. Vérifie GMAIL_USER / GMAIL_APP_PASSWORD / CONTACT_TO." },
+        { status: 500, headers: { "Cache-Control": "no-store" } }
       )
     }
-
-    // -------- META
-    const headers = req.headers
-    const userAgent = headers.get("user-agent") || "Inconnu"
-    const referer = headers.get("referer") || "Direct / inconnu"
-    const ip =
-      headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      headers.get("x-real-ip") ||
-      "Inconnue"
 
     const now = new Date()
     const dateFR = now.toLocaleString("fr-FR", { timeZone: "Europe/Paris" })
 
     // -------- Transport (SMTP Gmail)
     const isDev = process.env.NODE_ENV !== "production"
-
     const transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
       port: 465,
       secure: true,
-      auth: {
-        user: GMAIL_USER,
-        pass: GMAIL_APP_PASSWORD,
-      },
-      // ⚠️ DEV ONLY: évite l'erreur "self-signed certificate" sur ton PC
+      auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD },
       ...(isDev ? { tls: { rejectUnauthorized: false } } : {}),
     })
 
     await transporter.verify()
 
-    // -------- Email content
-    const subject = `Nouveau message — ${name}${company ? ` (${company})` : ""}`
+    // -------- Email
+    const subject = `Contact site — ${name}${company ? ` | ${company}` : ""}`
     const h = (s: string) => escapeHtml(String(s || ""))
 
-    const replyHref = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(
-      `Re: ${subject}`
-    )}`
+    const replyHref = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(`Re: ${subject}`)}`
 
     await transporter.sendMail({
-      from: `"Independant Studio" <${GMAIL_USER}>`,
+      from: `"Indépendant Studio" <${GMAIL_USER}>`,
       to: CONTACT_TO,
       replyTo: email,
       subject,
-
       text: [
         `NOUVEAU MESSAGE (site)`,
         `Date: ${dateFR}`,
-        "",
+        ``,
         `Nom: ${name}`,
         `Email: ${email}`,
         `Entreprise: ${company || "(non renseignée)"}`,
-        "",
+        ``,
         `Message:`,
         message,
-        "",
+        ``,
         `--- META ---`,
         `Page: ${referer}`,
         `IP: ${ip}`,
         `User-Agent: ${userAgent}`,
       ].join("\n"),
-
       html: `
 <div style="margin:0;padding:0;background:#0b0b0d;">
   <table width="100%" cellpadding="0" cellspacing="0" style="padding:28px 0;">
@@ -148,9 +191,7 @@ export async function POST(req: Request) {
                   ${h(name)}
                   ${
                     company
-                      ? `<span style="font-weight:600;color:rgba(255,255,255,0.7);"> — ${h(
-                          company
-                        )}</span>`
+                      ? `<span style="font-weight:600;color:rgba(255,255,255,0.7);"> — ${h(company)}</span>`
                       : ""
                   }
                 </div>
@@ -230,7 +271,7 @@ export async function POST(req: Request) {
 
           <tr>
             <td style="padding:0 18px 12px;font-size:12px;color:rgba(255,255,255,0.4);">
-              Independant Studio • Formulaire du site
+              Indépendant Studio • Formulaire du site
             </td>
           </tr>
 
@@ -242,16 +283,13 @@ export async function POST(req: Request) {
       `,
     })
 
-    return NextResponse.json({ ok: true })
+    return NextResponse.json({ ok: true }, { headers: { "Cache-Control": "no-store" } })
   } catch (err: any) {
     console.error("CONTACT API ERROR:", err)
     const isDev = process.env.NODE_ENV !== "production"
     return NextResponse.json(
-      {
-        error: "Impossible d’envoyer le message.",
-        detail: isDev ? String(err?.message ?? err) : undefined,
-      },
-      { status: 500 }
+      { error: "Impossible d’envoyer le message.", detail: isDev ? String(err?.message ?? err) : undefined },
+      { status: 500, headers: { "Cache-Control": "no-store" } }
     )
   }
 }

@@ -1,21 +1,31 @@
-"use client";
+/* eslint-disable react-hooks/set-state-in-effect */
+"use client"
 
-import { AnimatePresence } from "framer-motion";
-import { useState } from "react";
-import IntroOverlay from "./IntroOverlay"; // adapte le chemin
+import { AnimatePresence } from "framer-motion"
+import { useEffect, useState } from "react"
+import IntroOverlay from "./IntroOverlay"
 
 export default function IntroWrapper({ children }: { children: React.ReactNode }) {
-  const [done, setDone] = useState(false);
+  const [showIntro, setShowIntro] = useState(false)
+
+  // ✅ l’intro ne s’affiche qu’après hydration (côté client)
+  useEffect(() => {
+    setShowIntro(true)
+  }, [])
 
   return (
-    <>
-      {/* ✅ L’overlay arrive en premier */}
-      <AnimatePresence mode="wait">
-        {!done && <IntroOverlay onDone={() => setDone(true)} />}
-      </AnimatePresence>
+    <div className="relative">
+      {/* ✅ le contenu est TOUJOURS rendu (SSR) */}
+      {children}
 
-      {/* ✅ Rien d’autre ne monte avant la fin */}
-      {done ? children : null}
-    </>
-  );
+      {/* ✅ overlay au-dessus, n’empêche pas l’indexation */}
+      <AnimatePresence mode="wait">
+        {showIntro && (
+          <IntroOverlay
+            onDone={() => setShowIntro(false)}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  )
 }

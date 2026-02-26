@@ -1,137 +1,8 @@
-"use client"
-
-import { useEffect, useRef } from "react"
-
-function clamp(n: number, min: number, max: number) {
-  return Math.max(min, Math.min(max, n))
-}
+// components/Hero.tsx (SERVER)
+import HeroMedia from "./HeroMedia.client"
 
 export default function Hero() {
   const poster = "/hero/poster.jpg"
-
-  const mediaRef = useRef<HTMLDivElement | null>(null)
-  const videoRef = useRef<HTMLVideoElement | null>(null)
-
-  const rafRef = useRef<number | null>(null)
-  const currentY = useRef(0)
-  const targetY = useRef(0)
-
-  // ✅ évite spam de play/pause et erreurs "play() interrupted"
-  const playPromiseRef = useRef<Promise<void> | null>(null)
-  const lastVisibleRef = useRef<boolean>(false)
-
-  useEffect(() => {
-    const el = mediaRef.current
-    const v = videoRef.current
-    if (!el) return
-
-    // ✅ applique la transform sans re-render
-    const applyTransform = (y: number) => {
-      el.style.setProperty("--parallax-y", `${y.toFixed(2)}px`)
-    }
-
-    // ✅ calcule la cible
-    const updateTarget = () => {
-      const rect = el.getBoundingClientRect()
-      const vh = window.innerHeight
-
-      const progress = (vh - rect.top) / (vh + rect.height)
-      const t = clamp(progress, 0, 1)
-
-      targetY.current = (t - 0.5) * 80 // -40..+40
-    }
-
-    // ✅ RAF “intelligent” : tourne uniquement pendant l’animation
-    const tick = () => {
-      const next = currentY.current + (targetY.current - currentY.current) * 0.10
-      currentY.current = next
-      applyTransform(next)
-
-      if (Math.abs(targetY.current - currentY.current) < 0.1) {
-        rafRef.current = null
-        return
-      }
-      rafRef.current = requestAnimationFrame(tick)
-    }
-
-    // ✅ throttle via RAF (scroll peut spammer)
-    let scrollScheduled = false
-    const requestTick = () => {
-      if (scrollScheduled) return
-      scrollScheduled = true
-      requestAnimationFrame(() => {
-        scrollScheduled = false
-        updateTarget()
-        if (rafRef.current == null) rafRef.current = requestAnimationFrame(tick)
-      })
-    }
-
-    // 1) Parallax
-    requestTick()
-    window.addEventListener("scroll", requestTick, { passive: true })
-    window.addEventListener("resize", requestTick)
-
-    // 2) Vidéo: play/pause quand visible (avec load() + garde-fous)
-    let io: IntersectionObserver | null = null
-
-    const safePlay = async () => {
-      if (!v) return
-      // évite play() spam
-      if (playPromiseRef.current) return
-
-      // force un chargement si preload="none"
-      v.preload = "metadata"
-      v.load()
-
-      playPromiseRef.current = v
-        .play()
-        .catch(() => {})
-        .finally(() => {
-          playPromiseRef.current = null
-        }) as Promise<void>
-    }
-
-    const safePause = () => {
-      if (!v) return
-      v.pause()
-    }
-
-    if (v) {
-      io = new IntersectionObserver(
-        (entries) => {
-          const visible = !!entries[0]?.isIntersecting
-
-          // évite toggles rapides
-          if (visible === lastVisibleRef.current) return
-          lastVisibleRef.current = visible
-
-          if (!visible) {
-            safePause()
-            // optionnel: si tu veux économiser plus, coupe le réseau:
-            v.preload = "none"
-          } else {
-            void safePlay()
-          }
-        },
-        { rootMargin: "200px 0px", threshold: 0.15 }
-      )
-
-      io.observe(el)
-
-      // ✅ debug soft (tu peux enlever)
-      v.addEventListener("error", () => {
-        // eslint-disable-next-line no-console
-        console.log("HERO VIDEO ERROR", v.currentSrc, v.error)
-      })
-    }
-
-    return () => {
-      window.removeEventListener("scroll", requestTick)
-      window.removeEventListener("resize", requestTick)
-      if (rafRef.current) cancelAnimationFrame(rafRef.current)
-      if (io) io.disconnect()
-    }
-  }, [])
 
   return (
     <section className="relative px-4 pt-12 pb-12 overflow-hidden">
@@ -145,10 +16,10 @@ export default function Hero() {
       </div>
 
       <div className="relative mx-auto w-full max-w-[1100px]">
-        {/* TITRE */}
-        <h1 className="mt-10 text-[clamp(48px,10vw,120px)] leading-[0.9] tracking-[-0.03em] font-bold animate-in fade-in slide-in-from-bottom-6 duration-700 delay-150">
+        {/* SEO: H1 + sous-texte clair */}
+        <h1 className="mt-10 text-[clamp(48px,10vw,120px)] leading-[0.9] tracking-[-0.03em] font-bold">
           <span className="bg-clip-text text-transparent bg-gradient-to-b from-foreground via-foreground to-foreground/60">
-            Independant
+            Indépendant
           </span>
           <br />
           <span className="bg-clip-text text-transparent bg-gradient-to-b from-foreground via-foreground to-foreground/40">
@@ -156,17 +27,21 @@ export default function Hero() {
           </span>
         </h1>
 
-        {/* TEXTE + CTA */}
-        <div className="mt-6 flex flex-col gap-6 md:flex-row md:items-end md:justify-between animate-in fade-in slide-in-from-bottom-6 duration-700 delay-300">
+        {/* Option SEO (recommandé) : une phrase “service + ville” très explicite */}
+        <p className="sr-only">
+          Agence marketing et création de contenus à Rouen : stratégie, production
+          photo/vidéo, réseaux sociaux et publicité.
+        </p>
+
+        <div className="mt-6 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <div className="max-w-[580px]">
             <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
-              AGENCE MARKETING & CRÉATION DE CONTENUS basée à Rouen. Stratégie,
-              Production vidéos et photos, gestion des réseaux sociaux, Publicité.
-              NOUS SOMMES VOTRE PARTENAIRE DE CROISSANCE DIGITAL EN NORMANDIE
+              Agence marketing & création de contenus basée à Rouen. Stratégie,
+              production vidéos et photos, gestion des réseaux sociaux, publicité.
+              Votre partenaire de croissance digitale en Normandie.
             </p>
 
             <div className="mt-5 flex flex-wrap items-center gap-3">
-              {/* ✅ bug: href="contact" doit être "/contact" ou "#contact" */}
               <a
                 href="/contact"
                 className="group inline-flex items-center gap-2 rounded-full bg-foreground text-background px-5 py-2.5 text-sm font-semibold shadow-sm hover:shadow-md transition"
@@ -183,15 +58,6 @@ export default function Hero() {
               >
                 À propos
               </a>
-
-              <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="h-1.5 w-1.5 rounded-full bg-foreground/40" />
-                <span>Branding</span>
-                <span className="h-1.5 w-1.5 rounded-full bg-foreground/40" />
-                <span>Web</span>
-                <span className="h-1.5 w-1.5 rounded-full bg-foreground/40" />
-                <span>Digital</span>
-              </div>
             </div>
           </div>
 
@@ -207,62 +73,8 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* VIDEO PARALLAX */}
-        <div
-          ref={mediaRef}
-          className="mt-10 relative h-[clamp(260px,38vw,520px)] w-full rounded-3xl border border-border/70 overflow-hidden bg-black animate-in fade-in zoom-in-95 duration-700 delay-500"
-        >
-          <div
-            className="absolute inset-0 will-change-transform transform-gpu"
-            style={{
-              transform: "translateY(var(--parallax-y, 0px)) scale(1.10)",
-            }}
-          >
-            <video
-              ref={videoRef}
-              className="h-full w-full object-cover"
-              // ✅ on laisse autoplay, mais l’IO gère play/pause + load
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="none"
-              poster={poster}
-            >
-              {/* ✅ webm d’abord OK, mp4 fallback OK */}
-              <source
-                src="https://res.cloudinary.com/dba299maa/video/upload/3_s5r0qc.webm"
-                type="video/webm"
-              />
-              <source
-                src="https://res.cloudinary.com/dba299maa/video/upload/3_s5r0qc.mp4"
-                type="video/mp4"
-              />
-            </video>
-          </div>
-
-          <div className="pointer-events-none absolute inset-0 opacity-40">
-            <div className="absolute -inset-[40%] bg-[conic-gradient(from_180deg_at_50%_50%,transparent,rgba(255,255,255,0.10),transparent)] blur-2xl animate-[spin_9s_linear_infinite]" />
-          </div>
-
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-black/20" />
-          <div className="absolute inset-0 opacity-[0.10] mix-blend-overlay [background-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><filter id=%22n%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%222%22 stitchTiles=%22stitch%22/></filter><rect width=%2260%22 height=%2260%22 filter=%22url(%23n)%22 opacity=%220.4%22/></svg>')]" />
-
-          <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between gap-4">
-            <div>
-              <div className="text-xs font-bold tracking-[0.18em] opacity-80 text-white">
-                SHOWREEL
-              </div>
-              <div className="mt-1 text-lg md:text-xl font-semibold text-white">
-                Expériences digitales — made in Rouen.
-              </div>
-            </div>
-            <div className="hidden md:inline-flex items-center gap-2 text-xs text-white/70">
-              <span className="h-2 w-2 rounded-full bg-white/40" />
-              Scroll
-            </div>
-          </div>
-        </div>
+        {/* Media = client-only */}
+        <HeroMedia poster={poster} />
       </div>
     </section>
   )
