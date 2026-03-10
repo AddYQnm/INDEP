@@ -15,15 +15,15 @@ export default function VideoSlider() {
   const videos: VideoItemT[] = useMemo(
     () => [
       {
-        src: "https://res.cloudinary.com/dba299maa/video/upload/v1770261634/1_f0juwg.mp4",
+        src: "https://res.cloudinary.com/dzk0qtcta/video/upload/v1773107355/1_xbj9pq.mp4",
         poster: "/posters/slider-1.jpg",
       },
       {
-        src: "https://res.cloudinary.com/dba299maa/video/upload/v1770261694/3_olqt0c.mp4",
+        src: "https://res.cloudinary.com/dzk0qtcta/video/upload/v1773107485/3_anz1co.mp4",
         poster: "/posters/slider-2.jpg",
       },
       {
-        src: "https://res.cloudinary.com/dba299maa/video/upload/v1770261741/4_udv562.mp4",
+        src: "https://res.cloudinary.com/dzk0qtcta/video/upload/v1773107494/4_dhyked.mp4",
         poster: "/posters/slider-3.jpg",
       },
     ],

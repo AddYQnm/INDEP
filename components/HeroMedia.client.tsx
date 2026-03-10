@@ -6,20 +6,17 @@ function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n))
 }
 
+const YOUTUBE_ID = "K1iTABNOuaU"
+
 export default function HeroMedia({ poster }: { poster: string }) {
   const mediaRef = useRef<HTMLDivElement | null>(null)
-  const videoRef = useRef<HTMLVideoElement | null>(null)
 
   const rafRef = useRef<number | null>(null)
   const currentY = useRef(0)
   const targetY = useRef(0)
 
-  const playPromiseRef = useRef<Promise<void> | null>(null)
-  const lastVisibleRef = useRef<boolean>(false)
-
   useEffect(() => {
     const el = mediaRef.current
-    const v = videoRef.current
     if (!el) return
 
     const applyTransform = (y: number) => {
@@ -61,54 +58,10 @@ export default function HeroMedia({ poster }: { poster: string }) {
     window.addEventListener("scroll", requestTick, { passive: true })
     window.addEventListener("resize", requestTick)
 
-    let io: IntersectionObserver | null = null
-
-    const safePlay = async () => {
-      if (!v) return
-      if (playPromiseRef.current) return
-
-      // charge uniquement quand visible
-      v.preload = "metadata"
-      v.load()
-
-      playPromiseRef.current = v
-        .play()
-        .catch(() => {})
-        .finally(() => {
-          playPromiseRef.current = null
-        }) as Promise<void>
-    }
-
-    const safePause = () => {
-      if (!v) return
-      v.pause()
-    }
-
-    if (v) {
-      io = new IntersectionObserver(
-        (entries) => {
-          const visible = !!entries[0]?.isIntersecting
-          if (visible === lastVisibleRef.current) return
-          lastVisibleRef.current = visible
-
-          if (!visible) {
-            safePause()
-            v.preload = "none"
-          } else {
-            void safePlay()
-          }
-        },
-        { rootMargin: "200px 0px", threshold: 0.15 }
-      )
-
-      io.observe(el)
-    }
-
     return () => {
       window.removeEventListener("scroll", requestTick)
       window.removeEventListener("resize", requestTick)
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
-      if (io) io.disconnect()
     }
   }, [])
 
@@ -122,27 +75,21 @@ export default function HeroMedia({ poster }: { poster: string }) {
         className="absolute inset-0 will-change-transform transform-gpu"
         style={{ transform: "translateY(var(--parallax-y, 0px)) scale(1.10)" }}
       >
-        <video
-          ref={videoRef}
-          className="h-full w-full object-cover"
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="none"
-          poster={poster}
-          aria-hidden="true"
-          tabIndex={-1}
-        >
-          <source
-            src="https://res.cloudinary.com/dba299maa/video/upload/3_s5r0qc.webm"
-            type="video/webm"
+        <div className="relative h-full w-full bg-black">
+          <img
+            src={poster}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover"
           />
-          <source
-            src="https://res.cloudinary.com/dba299maa/video/upload/3_s5r0qc.mp4"
-            type="video/mp4"
+
+          <iframe
+            className="absolute left-1/2 top-1/2 h-[140%] w-[140%] max-w-none -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+            src={`https://www.youtube.com/embed/${YOUTUBE_ID}?autoplay=1&mute=1&loop=1&playlist=${YOUTUBE_ID}&controls=0&modestbranding=1&playsinline=1&rel=0&iv_load_policy=3&disablekb=1`}
+            title="Showreel video"
+            allow="autoplay; fullscreen; encrypted-media"
+            allowFullScreen
           />
-        </video>
+        </div>
       </div>
 
       <div className="pointer-events-none absolute inset-0 opacity-40">
