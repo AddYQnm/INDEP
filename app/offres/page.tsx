@@ -1,9 +1,17 @@
-// app/offres/page.tsx (SERVER)
+// app/offres/page.tsx
+
 import type { Metadata } from "next"
-import HeroSection from "./HeroSection.client"
-import ProcessSection from "./ProcessSection.client"
-import FinalCTA from "./FinalCTA.client"
-import OffresInteractive from "./OffresInteractive.client"
+import dynamic from "next/dynamic"
+
+// ✅ Dynamic import SANS ssr:false (important)
+const HeroSection = dynamic(() => import("./HeroSection.client"))
+const ProcessSection = dynamic(() => import("./ProcessSection.client"))
+const OffresInteractive = dynamic(() => import("./OffresInteractive.client"), {
+  loading: () => <div className="h-[400px]" />, // skeleton smooth
+})
+const FinalCTA = dynamic(() => import("./FinalCTA.client"), {
+  loading: () => <div className="h-[300px]" />,
+})
 
 export const metadata: Metadata = {
   title: "Offres vidéo | Indépendant Studio",
@@ -15,10 +23,17 @@ export const metadata: Metadata = {
 export default function OffresPage() {
   return (
     <main className="bg-white text-black overflow-hidden">
+      
+      {/* Hero direct (priorité UX) */}
       <HeroSection />
-      <ProcessSection />
-      <OffresInteractive />
-      <FinalCTA />
+
+      {/* Sections suivantes */}
+      <div className="will-change-transform">
+        <ProcessSection />
+        <OffresInteractive />
+        <FinalCTA />
+      </div>
+
     </main>
   )
 }
