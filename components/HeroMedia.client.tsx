@@ -83,14 +83,16 @@ export default function HeroMedia({ poster }: { poster: string }) {
           />
 
           {/* YOUTUBE (chargement progressif) */}
-          <iframe
-            className={`absolute left-1/2 top-1/2 h-[140%] w-[140%] max-w-none -translate-x-1/2 -translate-y-1/2 pointer-events-none transition-opacity duration-700 ${
+                    <video
+            className={`absolute left-1/2 top-1/2 h-[140%] w-[140%] max-w-none -translate-x-1/2 -translate-y-1/2 object-cover pointer-events-none transition-opacity duration-700 ${
               videoReady ? "opacity-100" : "opacity-0"
             }`}
-            src={`https://www.youtube.com/embed/${YOUTUBE_ID}?autoplay=1&mute=1&loop=1&playlist=${YOUTUBE_ID}&controls=0&modestbranding=1&playsinline=1&rel=0`}
-            onLoad={() => setVideoReady(true)}
-            title="Showreel video"
-            allow="autoplay; fullscreen"
+            src="https://res.cloudinary.com/dnsdrqzi3/video/upload/v1774465094/independant_obnt62.mov"
+            autoPlay
+            muted
+            loop
+            playsInline
+            onCanPlay={() => setVideoReady(true)}
           />
         </div>
       </div>
